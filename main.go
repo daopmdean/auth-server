@@ -37,10 +37,16 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-func encodeFunc(w http.ResponseWriter, req *http.Request) {
-
+func encodeFunc(w http.ResponseWriter, r *http.Request) {
+	p1 := person{
+		First: "Dean",
+	}
+	err := json.NewEncoder(w).Encode(p1)
+	if err != nil {
+		log.Println("Encoded bad data", err)
+	}
 }
 
-func decodeFunc(w http.ResponseWriter, req *http.Request) {
+func decodeFunc(w http.ResponseWriter, r *http.Request) {
 
 }
