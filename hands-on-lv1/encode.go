@@ -1,4 +1,4 @@
-package main
+package handsonlv1
 
 import (
 	"encoding/json"
