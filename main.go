@@ -2,14 +2,33 @@ package main
 
 import (
 	"crypto/hmac"
-	"crypto/sha256"
+	"crypto/sha512"
 	"fmt"
 	"log"
+	"time"
 
+	"github.com/golang-jwt/jwt"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var key []byte
+
+type UserClaims struct {
+	jwt.StandardClaims
+	SessionId int64
+}
+
+func (u *UserClaims) Valid() error {
+	if !u.VerifyExpiresAt(time.Now().Unix(), true) {
+		return fmt.Errorf("Token expired")
+	}
+
+	if u.SessionId == 0 {
+		return fmt.Errorf("Invalid Session Id")
+	}
+
+	return nil
+}
 
 func main() {
 	for i := 1; i <= 64; i++ {
@@ -46,7 +65,7 @@ func comparePassword(hashedPassword, password []byte) error {
 }
 
 func signMessage(msg []byte) ([]byte, error) {
-	h := hmac.New(sha256.New, key)
+	h := hmac.New(sha512.New, key)
 
 	_, err := h.Write(msg)
 	if err != nil {
