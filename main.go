@@ -2,16 +2,17 @@ package main
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha512"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var key []byte
 
 type UserClaims struct {
 	jwt.StandardClaims
@@ -31,9 +32,6 @@ func (u *UserClaims) Valid() error {
 }
 
 func main() {
-	for i := 1; i <= 64; i++ {
-		key = append(key, byte(i))
-	}
 	pass := "somePassword"
 	hashed, err := hashPassword(pass)
 	if err != nil {
@@ -65,7 +63,7 @@ func comparePassword(hashedPassword, password []byte) error {
 }
 
 func signMessage(msg []byte) ([]byte, error) {
-	h := hmac.New(sha512.New, key)
+	h := hmac.New(sha512.New, keys[currentKid].key)
 
 	_, err := h.Write(msg)
 	if err != nil {
@@ -86,9 +84,38 @@ func checkSig(msg, sig []byte) (bool, error) {
 	return result, nil
 }
 
+func generateNewKey() error {
+	newKey := make([]byte, 64)
+	_, err := io.ReadFull(rand.Reader, newKey)
+	if err != nil {
+		return fmt.Errorf("Error in generateNewKey: %w", err)
+	}
+
+	uid, err := uuid.NewRandom()
+	if err != nil {
+		return fmt.Errorf("Error in generateNewKey: %w", err)
+	}
+
+	keys[uid.String()] = key{
+		key:     newKey,
+		created: time.Now(),
+	}
+	currentKid = uid.String()
+
+	return nil
+}
+
+type key struct {
+	key     []byte
+	created time.Time
+}
+
+var currentKid = ""
+var keys = map[string]key{}
+
 func createToken(c *UserClaims) (string, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS512, c)
-	signedToken, err := jwtToken.SignedString(key)
+	signedToken, err := jwtToken.SignedString(keys[currentKid].key)
 	if err != nil {
 		return "", fmt.Errorf("Errror in createToken while signing token: %w", err)
 	}
@@ -101,7 +128,18 @@ func parseToken(signedToken string) (*UserClaims, error) {
 		if t.Method.Alg() != jwt.SigningMethodHS512.Alg() {
 			return nil, fmt.Errorf("Invalid Signing Algorithm")
 		}
-		return key, nil
+
+		kid, ok := t.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("Invalid Key Id")
+		}
+
+		k, ok := keys[kid]
+		if !ok {
+			return nil, fmt.Errorf("Invalid Key Id")
+		}
+
+		return k.key, nil
 	})
 
 	if err != nil {
