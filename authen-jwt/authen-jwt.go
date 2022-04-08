@@ -75,6 +75,9 @@ func foo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t, err := jwt.ParseWithClaims(c.Value, &myClaims{}, func(t *jwt.Token) (interface{}, error) {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, fmt.Errorf("Wrong Alg")
+		}
 		return key, nil
 	})
 	message := "Not Logged In"
