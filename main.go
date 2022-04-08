@@ -32,13 +32,15 @@ func (u *UserClaims) Valid() error {
 }
 
 func main() {
-	pass := "somePassword"
+	pass := "pass"
 	hashed, err := hashPassword(pass)
 	if err != nil {
 		log.Fatalln("Error hashing password")
 	}
 
-	err = comparePassword(hashed, []byte("assd"))
+	log.Println(hashed)
+
+	err = comparePassword(hashed, []byte("pass"))
 	if err != nil {
 		log.Fatalln("Wrong password")
 	}
