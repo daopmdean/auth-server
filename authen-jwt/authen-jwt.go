@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"time"
 
@@ -15,14 +16,14 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
+var key = []byte("My Secret Key")
+
 type myClaims struct {
 	jwt.StandardClaims
 	Email string
 }
 
 func getJwt(msg string) (string, error) {
-	key := []byte("My Secret Key")
-
 	claims := myClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(5 * time.Minute).Unix(),
@@ -61,7 +62,7 @@ func bar(w http.ResponseWriter, r *http.Request) {
 
 	c := http.Cookie{
 		Name:  "session",
-		Value: code + "|" + email,
+		Value: code,
 	}
 
 	http.SetCookie(w, &c)
@@ -74,14 +75,32 @@ func foo(w http.ResponseWriter, r *http.Request) {
 		c = &http.Cookie{}
 	}
 
+	t, err := jwt.ParseWithClaims(c.Value, &myClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return key, nil
+	})
+	if err != nil {
+		html := buildHtml(c.Value, "Not Logged In")
+		io.WriteString(w, html)
+		return
+	}
+
 	isLoggedIn := false
+	if claims, ok := t.Claims.(*myClaims); ok && t.Valid {
+		log.Println(claims)
+		isLoggedIn = true
+	}
 
 	message := "Not Logged In"
 	if isLoggedIn {
 		message = "Logged In"
 	}
 
-	html := `<!DOCTYPE html>
+	html := buildHtml(c.Value, message)
+	io.WriteString(w, html)
+}
+
+func buildHtml(value, message string) string {
+	return `<!DOCTYPE html>
 	<html lang="en">
 	<head>
 		<meta charset="UTF-8">
@@ -90,7 +109,7 @@ func foo(w http.ResponseWriter, r *http.Request) {
 		<title>HMAC Example</title>
 	</head>
 	<body>
-		<p>` + c.Value + `</p>
+		<p>` + value + `</p>
 		<p>` + message + `</p>
 		<form action="/submit" method="post">
 			<input type="email" name="email" />
@@ -98,5 +117,4 @@ func foo(w http.ResponseWriter, r *http.Request) {
 		</form>
 	</body>
 	</html>`
-	io.WriteString(w, html)
 }
