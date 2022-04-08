@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
@@ -78,19 +77,20 @@ func foo(w http.ResponseWriter, r *http.Request) {
 	t, err := jwt.ParseWithClaims(c.Value, &myClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return key, nil
 	})
+	message := "Not Logged In"
 	if err != nil {
-		html := buildHtml(c.Value, "Not Logged In")
+		html := buildHtml(c.Value, message)
 		io.WriteString(w, html)
 		return
 	}
 
 	isLoggedIn := false
-	if claims, ok := t.Claims.(*myClaims); ok && t.Valid {
-		log.Println(claims)
+	if t.Valid {
 		isLoggedIn = true
+	} else {
+		message = "Invalid Token"
 	}
 
-	message := "Not Logged In"
 	if isLoggedIn {
 		message = "Logged In"
 	}
