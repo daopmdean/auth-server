@@ -27,7 +27,7 @@ func main() {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
-	html := buildIndexHtml("<email>", "<password>")
+	html := buildIndexHtml("<token>")
 	io.WriteString(w, html)
 }
 
@@ -43,10 +43,18 @@ func register(w http.ResponseWriter, r *http.Request) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "Error generate password", http.StatusInternalServerError)
+		return
 	}
 
 	db[email] = hashed
-	html := buildIndexHtml(email, string(db[email]))
+
+	token, err := createToken(email)
+	if err != nil {
+		http.Error(w, "Error in register, could not create token", http.StatusInternalServerError)
+		return
+	}
+
+	html := buildIndexHtml(token)
 	io.WriteString(w, html)
 }
 
@@ -65,11 +73,29 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	html := buildIndexHtml(email, string(db[email]))
+	token, err := createToken(email)
+	if err != nil {
+		http.Error(w, "Error in login, could not create token", http.StatusInternalServerError)
+		return
+	}
+
+	claims, err := parseToken(token)
+	if err != nil {
+		http.Error(w, "Error in login, could not parse token", http.StatusInternalServerError)
+		return
+	}
+
+	c := http.Cookie{
+		Name:  "sessionId",
+		Value: claims.Email,
+	}
+	http.SetCookie(w, &c)
+
+	html := buildIndexHtml(token)
 	io.WriteString(w, html)
 }
 
-func buildIndexHtml(email, password string) string {
+func buildIndexHtml(token string) string {
 	return `<!DOCTYPE html>
 	<html lang="en">
 	<head>
@@ -79,8 +105,7 @@ func buildIndexHtml(email, password string) string {
 		<title>Lv 2 - Excercise 1</title>
 	</head>
 	<body>
-		<p>` + email + `</p>
-		<p>` + password + `</p>
+		<p>Token: ` + token + `</p>
 		<h2>Register</h2>
 		<form action="/register" method="post">
 			<input type="email" name="email" required/></br>
