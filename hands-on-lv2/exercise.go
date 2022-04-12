@@ -12,7 +12,12 @@ import (
 
 const jwtKey = "The Secret key for jwt"
 
-var db = map[string][]byte{}
+var db = map[string]user{}
+
+type user struct {
+	Email    string
+	Password []byte
+}
 
 type myClaims struct {
 	jwt.StandardClaims
@@ -46,7 +51,10 @@ func register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db[email] = hashed
+	db[email] = user{
+		Email:    email,
+		Password: hashed,
+	}
 
 	token, err := createToken(email)
 	if err != nil {
@@ -67,7 +75,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	err := bcrypt.CompareHashAndPassword(db[email], []byte(password))
+	err := bcrypt.CompareHashAndPassword(db[email].Password, []byte(password))
 	if err != nil {
 		http.Error(w, "Invalid password", http.StatusInternalServerError)
 		return
