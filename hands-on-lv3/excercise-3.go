@@ -43,6 +43,12 @@ type githubRes struct {
 	} `json:"data"`
 }
 
+type googleRes struct {
+	Id    string `json:"id"`
+	Email string `json:"email"`
+	Name  string `json:"name"`
+}
+
 // key - user id in github; value - user id in our app
 var githubConnections = map[string]string{}
 
@@ -156,11 +162,11 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	}
 	defer res.Body.Close()
 
-	err = printResponseBody(res.Body)
-	if err != nil {
-		http.Error(w, "Could not read info", http.StatusInternalServerError)
-		return
-	}
+	gr := &googleRes{}
+	json.NewDecoder(res.Body).Decode(gr)
+	log.Println("ID:", gr.Id)
+	log.Println("Email:", gr.Email)
+	log.Println("Name:", gr.Name)
 }
 
 func printResponseBody(body io.Reader) error {
