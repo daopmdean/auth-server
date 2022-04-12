@@ -1,12 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
 )
@@ -19,6 +20,17 @@ var githubOauthConfig = &oauth2.Config{
 	ClientSecret: "12722aeebc07090cf0e084f9fdb0fb0ac0cac44a",
 	Endpoint:     github.Endpoint,
 }
+
+type githubRes struct {
+	Data struct {
+		Viewer struct {
+			Id string `json:"id"`
+		} `json:"viewer"`
+	} `json:"data"`
+}
+
+// key - user id in github; value - user id in our app
+var githubConnections = map[string]string{}
 
 func main() {
 	http.HandleFunc("/", index)
@@ -68,6 +80,7 @@ func githubOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 
 	src := githubOauthConfig.TokenSource(ctx, token)
 	client := oauth2.NewClient(ctx, src)
+
 	requestBody := strings.NewReader(`{
 		"query": "query {viewer {id}}"
 	}`)
@@ -76,12 +89,18 @@ func githubOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Could not make request to github api", http.StatusInternalServerError)
 		return
 	}
+	defer res.Body.Close()
 
-	bs, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		http.Error(w, "Could not read response body", http.StatusInternalServerError)
-		return
+	u := &githubRes{}
+	json.NewDecoder(res.Body).Decode(u)
+
+	githubId := u.Data.Viewer.Id
+	appUserId, ok := githubConnections[githubId]
+	if !ok {
+		// Create new account for example
+		githubConnections[githubId] = uuid.New().String()
 	}
 
-	log.Println(string(bs))
+	log.Println(appUserId)
+	log.Println(githubConnections)
 }
