@@ -41,3 +41,22 @@ func githubOauth(w http.ResponseWriter, r *http.Request) {
 	redirectUrl := githubOauthConfig.AuthCodeURL("state8888")
 	http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 }
+
+func githubOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
+	state := r.FormValue("state")
+	if state != "8888" {
+		http.Error(w, "Invalid State", http.StatusBadRequest)
+		return
+	}
+
+	ctx := r.Context()
+	code := r.FormValue("code")
+	token, err := githubOauthConfig.Exchange(ctx, code)
+	if err != nil {
+		http.Error(w, "Could not login", http.StatusInternalServerError)
+		return
+	}
+
+	src := githubOauthConfig.TokenSource(ctx, token)
+	client := oauth2.NewClient(ctx, src)
+}
