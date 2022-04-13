@@ -11,43 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/github"
-	"golang.org/x/oauth2/google"
 )
-
-const githubGraphqlApi = "https://api.github.com/graphql"
-const jsonContentType = "application/json"
-
-var githubOauthConfig = &oauth2.Config{
-	ClientID:     "8ecab7653a8b3804c2c8",
-	ClientSecret: "12722aeebc07090cf0e084f9fdb0fb0ac0cac44a",
-	Endpoint:     github.Endpoint,
-}
-
-var googleOauthConfig = &oauth2.Config{
-	ClientID:     "167611725265-is1oj5liqvtr5afpn6t9cfddb4bi5a8r.apps.googleusercontent.com",
-	ClientSecret: "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",
-	RedirectURL:  "http://localhost:8080/oauth2/google/receive",
-	Scopes: []string{
-		"https://www.googleapis.com/auth/userinfo.profile",
-		"https://www.googleapis.com/auth/userinfo.email",
-	},
-	Endpoint: google.Endpoint,
-}
-
-type githubRes struct {
-	Data struct {
-		Viewer struct {
-			Id string `json:"id"`
-		} `json:"viewer"`
-	} `json:"data"`
-}
-
-type googleRes struct {
-	Id    string `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-}
 
 // key - user id in github; value - user id in our app
 var githubConnections = map[string]string{}
@@ -155,7 +119,7 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	src := googleOauthConfig.TokenSource(ctx, token)
 	client := oauth2.NewClient(ctx, src)
 
-	res, err := client.Get("https://www.googleapis.com/oauth2/v1/userinfo?alt=json")
+	res, err := client.Get(googleUserInfoApi)
 	if err != nil {
 		http.Error(w, "Could not get google info", http.StatusInternalServerError)
 		return
