@@ -6,9 +6,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
-// var
+var userState = map[string]time.Time{}
 
 // key - user id in github; value - user id in our app
 var githubConnections = map[string]string{}
@@ -23,6 +24,10 @@ func main() {
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, &http.Cookie{
+		Name:  "dsa",
+		Value: "dscaascws",
+	})
 	html := `<!DOCTYPE html>
 	<html lang="en">
 	<head>

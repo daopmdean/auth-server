@@ -42,7 +42,16 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 
 	gr := &googleRes{}
 	json.NewDecoder(res.Body).Decode(gr)
-	log.Println("ID:", gr.Id)
-	log.Println("Email:", gr.Email)
-	log.Println("Name:", gr.Name)
+
+	jwtToken, err := createToken(gr.Email)
+	if err != nil {
+		http.Error(w, "Could not create token", http.StatusInternalServerError)
+		return
+	}
+	log.Println(jwtToken)
+	http.SetCookie(w, &http.Cookie{
+		Name:  "jwtToken",
+		Value: jwtToken,
+	})
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

@@ -9,7 +9,7 @@ import (
 
 type myClaims struct {
 	jwt.StandardClaims
-	Email string
+	Email string `json:"email"`
 }
 
 func createToken(email string) (string, error) {
