@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -13,6 +15,7 @@ import (
 func googleOauth(w http.ResponseWriter, r *http.Request) {
 	uuid := uuid.New().String()
 	oauthExp[uuid] = time.Now().Add(time.Hour)
+
 	redirectUrl := googleOauthConfig.AuthCodeURL(uuid)
 	http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 }
@@ -45,6 +48,12 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	}
 	defer res.Body.Close()
 
+	bs, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		http.Error(w, "Could not read res body", http.StatusInternalServerError)
+		return
+	}
+
 	gr := &googleRes{}
 	json.NewDecoder(res.Body).Decode(gr)
 
@@ -58,5 +67,7 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 		Name:  "jwtToken",
 		Value: jwtToken,
 	})
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+
+	log.Println(string(bs))
+	io.WriteString(w, string(bs))
 }
