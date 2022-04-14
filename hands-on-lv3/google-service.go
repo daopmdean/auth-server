@@ -2,8 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -48,12 +46,6 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	}
 	defer res.Body.Close()
 
-	bs, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		http.Error(w, "Could not read res body", http.StatusInternalServerError)
-		return
-	}
-
 	gr := &googleRes{}
 	json.NewDecoder(res.Body).Decode(gr)
 
@@ -63,11 +55,11 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println(jwtToken)
-	http.SetCookie(w, &http.Cookie{
-		Name:  "jwtToken",
-		Value: jwtToken,
-	})
 
-	log.Println(string(bs))
-	io.WriteString(w, string(bs))
+	if _, ok := oauthConnections[gr.Id]; !ok {
+		log.Println("user does not exist in system yet")
+		oauthConnections[gr.Id] = *gr
+	} else {
+		log.Println("user exist in system")
+	}
 }

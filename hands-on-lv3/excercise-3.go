@@ -10,6 +10,7 @@ import (
 )
 
 var oauthExp = map[string]time.Time{}
+var oauthConnections = map[string]googleRes{}
 
 // key - user id in github; value - user id in our app
 var githubConnections = map[string]string{}
