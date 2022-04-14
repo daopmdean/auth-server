@@ -62,4 +62,11 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Println("user exist in system")
 	}
+	c := http.Cookie{
+		Name:  "jwtToken",
+		Value: jwtToken,
+		Path:  "/",
+	}
+	http.SetCookie(w, &c)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
