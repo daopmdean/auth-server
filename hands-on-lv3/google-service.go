@@ -68,5 +68,5 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 		Path:  "/",
 	}
 	http.SetCookie(w, &c)
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/info", http.StatusSeeOther)
 }
