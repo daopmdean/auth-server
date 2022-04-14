@@ -21,6 +21,7 @@ func main() {
 	http.HandleFunc("/oauth2/receive", githubOauthHandleReceive)
 	http.HandleFunc("/oauth2/google", googleOauth)
 	http.HandleFunc("/oauth2/google/receive", googleOauthHandleReceive)
+	http.HandleFunc("/info", info)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -29,7 +30,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 	<html lang="en">
 	<head>
 		<meta charset="UTF-8">
-		<title>OAuth2 Example</title>
+		<title>Hands on lv3</title>
 	</head>
 	<body>
 		<form action="/oauth2/github" method="post">
@@ -42,6 +43,60 @@ func index(w http.ResponseWriter, r *http.Request) {
 	</body>
 	</html>`
 	fmt.Fprint(w, html)
+}
+
+func info(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("jwtToken")
+	if err != nil {
+		html := buildNotLoggedInHtml()
+		fmt.Fprint(w, html)
+		return
+	}
+
+	claims, err := parseToken(c.Value)
+	if err != nil {
+		html := buildErrorHtml(err.Error())
+		fmt.Fprint(w, html)
+		return
+	}
+
+	html := `<!DOCTYPE html>
+		<html lang="en">
+		<head>
+			<meta charset="UTF-8">
+			<title>Hands on lv3</title>
+		</head>
+		<body>
+			<p>You logged in as: ` + claims.Email + `</p>
+		</body>
+		</html>`
+	fmt.Fprint(w, html)
+}
+
+func buildNotLoggedInHtml() string {
+	return `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Hands on lv3</title>
+	</head>
+	<body>
+		<p>You are not logged in yet</p>
+	</body>
+	</html>`
+}
+
+func buildErrorHtml(err string) string {
+	return `<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Hands on lv3</title>
+	</head>
+	<body>
+		<p>` + err + `</p>
+	</body>
+	</html>`
 }
 
 func printResponseBody(body io.Reader) error {

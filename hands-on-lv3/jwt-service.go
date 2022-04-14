@@ -15,7 +15,7 @@ type myClaims struct {
 func createToken(email string) (string, error) {
 	claims := myClaims{
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(5 * time.Minute).Unix(),
+			ExpiresAt: time.Now().Add(15 * time.Second).Unix(),
 		},
 		Email: email,
 	}
