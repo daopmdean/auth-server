@@ -4,12 +4,16 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 )
 
 func googleOauth(w http.ResponseWriter, r *http.Request) {
-	redirectUrl := googleOauthConfig.AuthCodeURL("8888")
+	uuid := uuid.New().String()
+	oauthExp[uuid] = time.Now().Add(time.Hour)
+	redirectUrl := googleOauthConfig.AuthCodeURL(uuid)
 	http.Redirect(w, r, redirectUrl, http.StatusSeeOther)
 }
 
@@ -17,10 +21,11 @@ func googleOauthHandleReceive(w http.ResponseWriter, r *http.Request) {
 	log.Println("Processing google oauth receive...")
 
 	state := r.FormValue("state")
-	if state != "8888" {
-		http.Error(w, "Invalid State", http.StatusBadRequest)
+	if time.Now().After(oauthExp[state]) {
+		http.Error(w, "Login Time Expire", http.StatusInternalServerError)
 		return
 	}
+	log.Println("Time still valid")
 
 	ctx := r.Context()
 	code := r.FormValue("code")
